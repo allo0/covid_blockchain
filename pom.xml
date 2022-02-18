@@ -16,7 +16,7 @@
     <name>bcserver</name>
     <description>Server for blockchain and data storage</description>
     <properties>
-        <java.version>17</java.version>
+        <java.version>16</java.version>
     </properties>
     <dependencies>
 
