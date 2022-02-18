@@ -11,6 +11,8 @@
     <groupId>protal</groupId>
     <artifactId>bcserver</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
     <name>bcserver</name>
     <description>Server for blockchain and data storage</description>
     <properties>
