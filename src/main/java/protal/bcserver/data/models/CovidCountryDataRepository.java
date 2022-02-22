@@ -9,10 +9,7 @@ import java.util.List;
 public interface CovidCountryDataRepository extends CrudRepository<CovidCountryData, Long> {
 
 
-    List<CovidCountryData> findByLocation(@Param("location") String location);
+    List<CovidCountryData> findCovidCountryDataByLocation(@Param("location") String location);
 
-//    List<CovidCountryData> findByDeaths(int deaths);
-//    List<CovidCountryData> findByLocation(String location);
-//    List<CovidCountryData> findByLocation(String location);
 
 }
