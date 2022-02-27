@@ -1,5 +1,6 @@
 package protal.bcserver.clockchain;
 
+import protal.bcserver.data.models.CovidCases;
 import protal.bcserver.data.models.CovidCountryData;
 
 import javax.persistence.*;
@@ -32,10 +33,16 @@ public class block {
     @JoinColumn(name = "covidcountry_id")
     private CovidCountryData ccd;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "covidcasesmonthly_id", referencedColumnName = "id")
+    private CovidCases ccms;
+
+
     @Transient
     private Integer prefix;
     @Transient
     private int nonce;
+
 
     public block(String previousHash, String data, long timeStamp) {
         this.previousHash = previousHash;
@@ -46,6 +53,14 @@ public class block {
 
     public block() {
 
+    }
+
+    public CovidCases getCc() {
+        return ccms;
+    }
+
+    public void setCc(CovidCases ccms) {
+        this.ccms = ccms;
     }
 
     public CovidCountryData getCcd() {
@@ -114,8 +129,8 @@ public class block {
     }
 
     public String calculateBlockHash(int nonce) {
-        String dataToHash = previousHash + String.valueOf(timeStamp) +
-                String.valueOf(nonce) + data;
+        String dataToHash = previousHash + timeStamp +
+                nonce + data;
 
         MessageDigest digest = null;
         byte[] bytes = null;
@@ -134,8 +149,8 @@ public class block {
     }
 
     public String calculateBlockHash() {
-        String dataToHash = previousHash + String.valueOf(timeStamp) +
-                String.valueOf(nonce) + data;
+        String dataToHash = previousHash + timeStamp +
+                nonce + data;
         MessageDigest digest = null;
         byte[] bytes = null;
         try {

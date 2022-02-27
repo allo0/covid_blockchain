@@ -18,7 +18,6 @@ public class CovidCountryData {
     private int ts;
     @Column(name = "location")
     private String location;
-
     @Column(name = "deaths")
     private int deaths;
     @Column(name = "recovered")
@@ -70,7 +69,6 @@ public class CovidCountryData {
     public void setDt(String dt) {
         this.dt = dt;
     }
-
 
     public String getLocation() {
         return location;

@@ -8,33 +8,37 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import protal.bcserver.clockchain.BlockchainCasesRepository;
 import protal.bcserver.clockchain.BlockchainRepository;
 import protal.bcserver.clockchain.ChainValidator;
 import protal.bcserver.clockchain.block;
-import protal.bcserver.data.models.CovidCountryData;
-import protal.bcserver.data.models.CovidCountryDataRepository;
+import protal.bcserver.data.models.*;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 @CrossOrigin(origins = "http://localhost:8080")
 //@CrossOrigin(origins = "https://vocid.herokuapp.com")
 @RestController
 @RequestMapping("/api")
-public class CovidDataCountryController {
+public class CovidDataController {
 
     public static List<block> blockChain = new ArrayList<>();
     public static int prefix = 3;
-    private final ReentrantLock lock = new ReentrantLock();
 
     @Autowired
     CovidCountryDataRepository ccdRepository;
+
     @Autowired
-    BlockchainRepository<CovidCountryData> bcRepository;
+    CovidCasesRepository ccRepository;
+
+    @Autowired
+    BlockchainRepository bcRepository;
+    @Autowired
+    BlockchainCasesRepository bcRepository2;
 
     Logger logger = LoggerFactory.getLogger(LoggingController.class);
 
@@ -125,20 +129,20 @@ public class CovidDataCountryController {
                 blockChain.add(blocks);
 
 
-//                ccdRepository.save(_ccd);
                 if (ChainValidator.isChainValid(prefix, blockChain)) { // If the cahin is valid, store it in db
                     blocks.setCcd(_ccd);
+
                     bcRepository.save(blocks);
-                }else{
+
+                    //String jsonString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(_ccd.toString());
+                    logger.info("Node: " + ((int) bcRepository.count()) + " created");
+                    logger.info(_ccd.toString());
+                    logger.info(blocks.getHash());
+
+                } else {
                     return new ResponseEntity<>(null, HttpStatus.UNPROCESSABLE_ENTITY);
                 }
 
-
-                //String jsonString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(_ccd.toString());
-                logger.info("Node: " + ((int) bcRepository.count()) + " created");
-                logger.info(_ccd.toString());
-                logger.info(blocks.getHash());
-//                logger.info("BlockChain is valid? :" + ChainValidator.isChainValid(prefix, blockChain));
 
                 return new ResponseEntity<>(_ccd, HttpStatus.CREATED);
             }
@@ -147,5 +151,57 @@ public class CovidDataCountryController {
         }
     }
 
+
+    @PostMapping("/casesByCountry")
+    public ResponseEntity<List<CovidCases>> createCasesByCountry(@RequestBody CovidCasesMonthly _ccm) {
+        List<CovidCases> jsonString = new ArrayList<>();
+        try {
+            synchronized (this) {
+
+                for (CovidCases cc : _ccm.getCases()) {
+
+                    cc.setYear(_ccm.getYear());
+                    cc.setCountry(_ccm.getCountry());
+
+                    String data = cc.toString();
+
+                    if (blockChain.isEmpty()) {
+                        block init_block = bcRepository2.findFirstByOrderByIdDesc();
+
+
+                        if (init_block != null) {
+                            blockChain.add(init_block);
+                            long node_count = bcRepository2.count();
+                            logger.warn("Node: " + node_count + " restored");
+                        }
+                    }
+
+                    String previous_hash = blockChain.size() > 0 ? blockChain.get(blockChain.size() - 1).getHash() : "0";
+
+                    blocks = new block(previous_hash, data, new Date().getTime());
+                    blocks.mineBlock(prefix);
+                    blockChain.add(blocks);
+
+                    if (ChainValidator.isChainValid(prefix, blockChain)) { // If the cahin is valid, store it in db
+
+                        blocks.setCc(cc);
+                        bcRepository2.saveAndFlush(blocks);
+
+                        logger.info("Node: " + ((int) bcRepository2.count()) + " created");
+                        logger.info(cc.toString());
+                        logger.info(blocks.getHash());
+
+                        jsonString.add(cc);
+                    }
+
+                }
+
+
+                return new ResponseEntity<>(jsonString, HttpStatus.CREATED);
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
 }
