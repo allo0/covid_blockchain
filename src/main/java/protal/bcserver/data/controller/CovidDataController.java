@@ -51,36 +51,10 @@ public class CovidDataController {
 
         try {
 
-//            synchronized (this) {
-//            if (blockChain.isEmpty()) {
-//                block init_block = bcRepository.findFirstByOrderByIdDesc();
-//
-//                if (init_block != null) {
-//                    blockChain.add(init_block);
-//                    Long node_count = bcRepository.count();
-//
-//                }
-//
-//            }
-//            String previous_hash = blockChain.size() > 0 ? blockChain.get(blockChain.size() - 1).getHash() : "0";
-//
-//            blocks = new block(previous_hash, "Very important data", new Date().getTime());
-//            blocks.mineBlock(prefix);
-//            blockChain.add(blocks);
 
-//            country_data.addAll(ccdRepository.findCovidCountryDataByLocation(location));
             country_data.addAll(ccdRepository.findCovidCountryDataByLocation(location));
 
-//            bcRepository.save(blocks);
-//            logger.info("Node: " + ((int) bcRepository.count()) + " created");
-//
-//            logger.info(blocks.getHash());
-//            logger.info("BlockChain is valid? :" + ChainValidator.isChainValid(prefix, blockChain));
 
-//            }
-
-            //Object to JSON Conversion
-            //String jsonString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(country_data.toString());
 
         } catch (Exception ex) {
             ex.printStackTrace();
