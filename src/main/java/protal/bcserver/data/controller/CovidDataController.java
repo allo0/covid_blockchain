@@ -2,6 +2,7 @@ package protal.bcserver.data.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import net.minidev.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +13,13 @@ import protal.bcserver.clockchain.BlockchainCasesRepository;
 import protal.bcserver.clockchain.BlockchainRepository;
 import protal.bcserver.clockchain.ChainValidator;
 import protal.bcserver.clockchain.block;
-import protal.bcserver.data.models.*;
+import protal.bcserver.data.models.CovidCases;
+import protal.bcserver.data.models.CovidCasesMonthly;
+import protal.bcserver.data.models.CovidCasesRepository;
+import protal.bcserver.data.models.CovidCountryData;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @CrossOrigin(origins = "http://localhost:8080")
@@ -29,8 +31,6 @@ public class CovidDataController {
     public static List<block> blockChain = new ArrayList<>();
     public static int prefix = 3;
 
-    @Autowired
-    CovidCountryDataRepository ccdRepository;
 
     @Autowired
     CovidCasesRepository ccRepository;
@@ -45,25 +45,166 @@ public class CovidDataController {
     ObjectMapper mapper = new ObjectMapper();
     block blocks = new block();
 
-    @GetMapping("/dataByCountry/{location}")
-    public ResponseEntity<List<CovidCountryData>> getAllDataByCountry(@PathVariable(required = true) String location) {
-        List<CovidCountryData> country_data = new ArrayList<CovidCountryData>();
+    @GetMapping("/covidCountries")
+    public ResponseEntity<JSONObject> getCountriesList() {
+        // Initialize the response json object
+        JSONObject response_json = new JSONObject();
 
+        List<String> countries = new ArrayList<String>();
+        countries.addAll(ccRepository.findDistinctByCountry());
+
+        response_json.put("countries", countries);
+        return new ResponseEntity<>(response_json, HttpStatus.OK);
+    }
+
+    @GetMapping("/covidCases")
+    public ResponseEntity<JSONObject> getCovidCases(@RequestParam("country") Optional<String> country, @RequestParam("month") Optional<Integer> month, @RequestParam("year") Optional<Integer> year, @RequestParam("deaths") Optional<Integer> deaths, @RequestParam("recovered") Optional<Integer> recovered, @RequestParam("confirmed") Optional<Integer> confirmed) {
+
+        // Initialize the response json object
+        JSONObject response_json = new JSONObject();
+
+        List<CovidCases> covid_cases = new ArrayList<CovidCases>();
+        List<CovidCases> filtered_list_year_month = new ArrayList<CovidCases>();
+        int records = 0;
+
+        /**
+         * Store all the results from the query based on a country
+         */
         try {
-
-
-            country_data.addAll(ccdRepository.findCovidCountryDataByLocation(location));
-
-
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            if (country.isPresent()) {
+                covid_cases.addAll(ccRepository.findCovidCasesByCountry(country.get().toLowerCase()));
+            } else {
+                covid_cases.addAll(ccRepository.findAll());
+            }
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.NO_CONTENT);
         }
-        if (country_data.isEmpty()) {
+
+
+        if (covid_cases.isEmpty()) {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
 
-        return new ResponseEntity<>(country_data, HttpStatus.OK);
+        /** Store the filtered results from the list, based on:
+         * if there is a month or a year value present
+         */
+        filtered_list_year_month = covid_cases.stream().filter(c -> {
+            if (month.isPresent()) {
+                return c.getMonth() == month.get();
+            } else return true;
+        }).filter(c -> {
+            if (year.isPresent()) {
+                return c.getYear() == year.get();
+            } else return true;
+        }).collect(Collectors.toList());
+
+        /**
+         *  Count of filtered records
+         */
+        records = filtered_list_year_month.size();
+
+        /**
+         * Add the current country to the response
+         */
+        if (country.isPresent()) {
+            response_json.put("country", country.get().toLowerCase());
+        } else {
+            response_json.put("country", "all");
+        }
+
+        response_json.put("records", records);
+
+        /**
+         * If the month is selected, add it to the response for extra details
+         */
+        if (month.isPresent()) {
+            response_json.put("month", month.get());
+        }
+
+        /**
+         * If the year is selected, add it to the response for extra details
+         */
+        if (year.isPresent()) {
+            response_json.put("year", year.get());
+        }
+
+        /**
+         * If the deaths flag is enabled, calculate the death stats
+         * and add them to the response json
+         */
+        if (deaths.isPresent() && deaths.get() == 1) {
+
+            JSONObject deaths_obj = new JSONObject();
+
+            int filtered_sum_deaths = 0;
+            OptionalDouble avg_deaths = null;
+            OptionalInt filtered_max_deaths = null;
+
+            filtered_sum_deaths = filtered_list_year_month.stream().mapToInt(c -> c.getDeaths()).sum();
+            avg_deaths = filtered_list_year_month.stream().mapToInt(c -> c.getDeaths()).average();
+            filtered_max_deaths = filtered_list_year_month.stream().mapToInt(c -> c.getDeaths()).max();
+
+            deaths_obj.put("sum", filtered_sum_deaths);
+            deaths_obj.put("avg", avg_deaths.isPresent() ? avg_deaths.getAsDouble() : "");
+            deaths_obj.put("max", filtered_max_deaths.isPresent() ? filtered_max_deaths.getAsInt() : "");
+            response_json.put("deaths", deaths_obj);
+            logger.info("Sum deaths (all months): " + filtered_sum_deaths);
+            logger.info("Avg deaths: " + (avg_deaths.isPresent() ? avg_deaths.getAsDouble() : ""));
+            logger.info("Max deaths (month with highest death rate): " + (filtered_max_deaths.isPresent() ? filtered_max_deaths.getAsInt() : ""));
+        }
+
+        /**
+         * If the recovered flag is enabled, calculate the recovered stats
+         * and add them to the response json
+         */
+        if (recovered.isPresent() && recovered.get() == 1) {
+
+            JSONObject recovered_obj = new JSONObject();
+
+            int filtered_sum_recovered = 0;
+            OptionalDouble avg_recovered = null;
+            OptionalInt filtered_max_recovered = null;
+
+            filtered_sum_recovered = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).sum();
+            avg_recovered = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).average();
+            filtered_max_recovered = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).max();
+
+            recovered_obj.put("sum", filtered_sum_recovered);
+            recovered_obj.put("avg", avg_recovered.isPresent() ? avg_recovered.getAsDouble() : "");
+            recovered_obj.put("max", filtered_max_recovered.isPresent() ? filtered_max_recovered.getAsInt() : "");
+            response_json.put("recovered", recovered_obj);
+            logger.info("Sum recovered (all months): " + filtered_sum_recovered);
+            logger.info("Avg recovered: " + (avg_recovered.isPresent() ? avg_recovered.getAsDouble() : ""));
+            logger.info("Max recovered (month with highest recovery rate): " + (filtered_max_recovered.isPresent() ? filtered_max_recovered.getAsInt() : ""));
+        }
+
+        /**
+         * If the confirmed flag is enabled, calculate the confirmed stats
+         * and add them to the response json
+         */
+        if (confirmed.isPresent() && confirmed.get() == 1) {
+
+            JSONObject confirmed_obj = new JSONObject();
+
+            int filtered_sum_confirmed = 0;
+            OptionalDouble avg_confirmed = null;
+            OptionalInt filtered_max_confirmed = null;
+
+            filtered_sum_confirmed = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).sum();
+            avg_confirmed = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).average();
+            filtered_max_confirmed = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).max();
+
+            confirmed_obj.put("sum", filtered_sum_confirmed);
+            confirmed_obj.put("avg", avg_confirmed.isPresent() ? avg_confirmed.getAsDouble() : "");
+            confirmed_obj.put("max", filtered_max_confirmed.isPresent() ? filtered_max_confirmed.getAsInt() : "");
+            response_json.put("confirmed", confirmed_obj);
+            logger.info("Sum confirmed (all months): " + filtered_sum_confirmed);
+            logger.info("Avg confirmed: " + (avg_confirmed.isPresent() ? avg_confirmed.getAsDouble() : ""));
+            logger.info("Max confirmed (month with highest confirmed infection rate): " + (filtered_max_confirmed.isPresent() ? filtered_max_confirmed.getAsInt() : ""));
+        }
+
+
+        return new ResponseEntity<>(response_json, HttpStatus.OK);
 
 
     }
@@ -76,7 +217,7 @@ public class CovidDataController {
             synchronized (this) {
 
                 CovidCountryData _ccd = new CovidCountryData();
-                _ccd.setLocation(body.get("location"));
+                _ccd.setLocation(body.get("location").toLowerCase());
                 _ccd.setTs(Integer.parseInt(body.get("ts")));
                 _ccd.setDt(body.get("dt"));
                 _ccd.setActive(Integer.parseInt(body.get("active")));
@@ -108,7 +249,6 @@ public class CovidDataController {
 
                     bcRepository.save(blocks);
 
-                    //String jsonString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(_ccd.toString());
                     logger.info("Node: " + ((int) bcRepository.count()) + " created");
                     logger.info(_ccd.toString());
                     logger.info(blocks.getHash());
@@ -135,7 +275,7 @@ public class CovidDataController {
                 for (CovidCases cc : _ccm.getCases()) {
 
                     cc.setYear(_ccm.getYear());
-                    cc.setCountry(_ccm.getCountry());
+                    cc.setCountry(_ccm.getCountry().toLowerCase());
 
                     String data = cc.toString();
 

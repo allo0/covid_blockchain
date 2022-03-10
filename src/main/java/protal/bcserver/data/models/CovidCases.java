@@ -40,6 +40,7 @@ public class CovidCases {
     public CovidCases() {
     }
 
+
     public int getYear() {
         return year;
     }
