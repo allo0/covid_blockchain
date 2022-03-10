@@ -145,12 +145,12 @@ public class CovidDataController {
             filtered_max_deaths = filtered_list_year_month.stream().mapToInt(c -> c.getDeaths()).max();
 
             deaths_obj.put("sum", filtered_sum_deaths);
-            deaths_obj.put("avg", avg_deaths.isPresent() ? avg_deaths.getAsDouble() : "");
-            deaths_obj.put("max", filtered_max_deaths.isPresent() ? filtered_max_deaths.getAsInt() : "");
+            deaths_obj.put("avg", avg_deaths.isPresent() ? avg_deaths.getAsDouble() : "0");
+            deaths_obj.put("max", filtered_max_deaths.isPresent() ? filtered_max_deaths.getAsInt() : "0");
             response_json.put("deaths", deaths_obj);
             logger.info("Sum deaths (all months): " + filtered_sum_deaths);
-            logger.info("Avg deaths: " + (avg_deaths.isPresent() ? avg_deaths.getAsDouble() : ""));
-            logger.info("Max deaths (month with highest death rate): " + (filtered_max_deaths.isPresent() ? filtered_max_deaths.getAsInt() : ""));
+            logger.info("Avg deaths: " + (avg_deaths.isPresent() ? avg_deaths.getAsDouble() : "0"));
+            logger.info("Max deaths (month with highest death rate): " + (filtered_max_deaths.isPresent() ? filtered_max_deaths.getAsInt() : "0"));
         }
 
         /**
@@ -170,12 +170,12 @@ public class CovidDataController {
             filtered_max_recovered = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).max();
 
             recovered_obj.put("sum", filtered_sum_recovered);
-            recovered_obj.put("avg", avg_recovered.isPresent() ? avg_recovered.getAsDouble() : "");
-            recovered_obj.put("max", filtered_max_recovered.isPresent() ? filtered_max_recovered.getAsInt() : "");
+            recovered_obj.put("avg", avg_recovered.isPresent() ? avg_recovered.getAsDouble() : "0");
+            recovered_obj.put("max", filtered_max_recovered.isPresent() ? filtered_max_recovered.getAsInt() : "0");
             response_json.put("recovered", recovered_obj);
             logger.info("Sum recovered (all months): " + filtered_sum_recovered);
-            logger.info("Avg recovered: " + (avg_recovered.isPresent() ? avg_recovered.getAsDouble() : ""));
-            logger.info("Max recovered (month with highest recovery rate): " + (filtered_max_recovered.isPresent() ? filtered_max_recovered.getAsInt() : ""));
+            logger.info("Avg recovered: " + (avg_recovered.isPresent() ? avg_recovered.getAsDouble() : "0"));
+            logger.info("Max recovered (month with highest recovery rate): " + (filtered_max_recovered.isPresent() ? filtered_max_recovered.getAsInt() : "0"));
         }
 
         /**
@@ -195,12 +195,12 @@ public class CovidDataController {
             filtered_max_confirmed = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).max();
 
             confirmed_obj.put("sum", filtered_sum_confirmed);
-            confirmed_obj.put("avg", avg_confirmed.isPresent() ? avg_confirmed.getAsDouble() : "");
-            confirmed_obj.put("max", filtered_max_confirmed.isPresent() ? filtered_max_confirmed.getAsInt() : "");
+            confirmed_obj.put("avg", avg_confirmed.isPresent() ? avg_confirmed.getAsDouble() : "0");
+            confirmed_obj.put("max", filtered_max_confirmed.isPresent() ? filtered_max_confirmed.getAsInt() : "0");
             response_json.put("confirmed", confirmed_obj);
             logger.info("Sum confirmed (all months): " + filtered_sum_confirmed);
-            logger.info("Avg confirmed: " + (avg_confirmed.isPresent() ? avg_confirmed.getAsDouble() : ""));
-            logger.info("Max confirmed (month with highest confirmed infection rate): " + (filtered_max_confirmed.isPresent() ? filtered_max_confirmed.getAsInt() : ""));
+            logger.info("Avg confirmed: " + (avg_confirmed.isPresent() ? avg_confirmed.getAsDouble() : "0"));
+            logger.info("Max confirmed (month with highest confirmed infection rate): " + (filtered_max_confirmed.isPresent() ? filtered_max_confirmed.getAsInt() : "0"));
         }
 
 
@@ -214,8 +214,11 @@ public class CovidDataController {
     public ResponseEntity<CovidCountryData> createDataByCountry(@RequestBody Map<String, String> body) {
 
         try {
+            // It's synchronized in order to prevent multiple concurrent requests
+            // from trying to a create covid country entry and a blockchain block
             synchronized (this) {
 
+                // Get the data from the request body
                 CovidCountryData _ccd = new CovidCountryData();
                 _ccd.setLocation(body.get("location").toLowerCase());
                 _ccd.setTs(Integer.parseInt(body.get("ts")));
@@ -225,6 +228,7 @@ public class CovidDataController {
                 _ccd.setConfirmed(Integer.parseInt(body.get("confirmed")));
                 _ccd.setRecovered(Integer.parseInt(body.get("recovered")));
 
+                // create a json string with the data which will be put in blockchain
                 String data = _ccd.toString();
 
                 if (blockChain.isEmpty()) {
