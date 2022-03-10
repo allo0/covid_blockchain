@@ -86,11 +86,14 @@ public class block {
 
     public void mineBlock(int prefix) {
         block_ready = false;
-        long startTime = System.nanoTime();
 
+        /**
+         * Initiate a thread pool, and indicate the threaded code block
+         */
         ExecutorService executor = Executors.newFixedThreadPool(5);  //Using 5 threads.
         Runnable mineTask = () -> {
             String prefixString = new String(new char[prefix]).replace('\0', '0');
+            // Each thread has its own nonce and hash
             int thread_nonce = this.nonce;
             String thread_hash = this.hash;
             while (!thread_hash.substring(0, prefix).equals(prefixString) && !block_ready) {
@@ -100,15 +103,12 @@ public class block {
             }
             block_ready = true;
 
-
+            // One thread each time can access and set the "global" nonce and hash
             synchronized (this) {
                 if (block_ready && thread_hash.substring(0, prefix).equals(prefixString)) {
                     this.nonce = thread_nonce;
                     this.hash = thread_hash;
-//                    long endTime = System.nanoTime();
-//                    long convert = TimeUnit.SECONDS.convert(endTime - startTime, TimeUnit.NANOSECONDS);
-//                    System.out.println("Latest Block Mined Successfully with hash : " + hash);
-//                    System.out.println("Current block's mining took: " + convert + " seconds");
+
                     executor.shutdown();
                 }
             }
@@ -116,6 +116,7 @@ public class block {
         };
 
         executor.execute(mineTask);
+        // Call a synchronized function that checks if the block is ready
         while (!isBlock_ready()) {
         }
     }

@@ -1,7 +1,6 @@
 package protal.bcserver.data.controller;
 
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.minidev.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,22 +27,22 @@ import java.util.stream.Collectors;
 @RequestMapping("/api")
 public class CovidDataController {
 
+    // Initiate the list to store the blockchain, the dificulty to mine
+    // and the b;pcl object
     public static List<block> blockChain = new ArrayList<>();
     public static int prefix = 3;
+    block blocks = new block();
 
-
+    // Create the objects that will be used for the "queries" with the db
     @Autowired
     CovidCasesRepository ccRepository;
-
     @Autowired
     BlockchainRepository bcRepository;
     @Autowired
     BlockchainCasesRepository bcRepository2;
 
+    // Create an object for logging
     Logger logger = LoggerFactory.getLogger(LoggingController.class);
-
-    ObjectMapper mapper = new ObjectMapper();
-    block blocks = new block();
 
     @GetMapping("/covidCountries")
     public ResponseEntity<JSONObject> getCountriesList() {
@@ -231,10 +230,16 @@ public class CovidDataController {
                 // create a json string with the data which will be put in blockchain
                 String data = _ccd.toString();
 
+                /**
+                 * Check if the list contains any blocks.
+                 * If it's empty, get the latest block inserted in the database
+                 */
                 if (blockChain.isEmpty()) {
                     block init_block = bcRepository.findFirstByOrderByIdDesc();
 
-
+                    /**
+                     * If the database is not empty, add the block to the list
+                     */
                     if (init_block != null) {
                         blockChain.add(init_block);
                         long node_count = bcRepository.count();
@@ -242,13 +247,19 @@ public class CovidDataController {
                     }
                 }
 
+                /**
+                 * Calculate (if exists) the previous hash and
+                 * create mining the new block
+                 */
                 String previous_hash = blockChain.size() > 0 ? blockChain.get(blockChain.size() - 1).getHash() : "0";
                 blocks = new block(previous_hash, data, new Date().getTime());
                 blocks.mineBlock(prefix);
                 blockChain.add(blocks);
 
 
-                if (ChainValidator.isChainValid(prefix, blockChain)) { // If the cahin is valid, store it in db
+                // If the chain is valid, store it in db
+                if (ChainValidator.isChainValid(prefix, blockChain)) {
+                    // Save the covid data first so we have the primary key
                     blocks.setCcd(_ccd);
 
                     bcRepository.save(blocks);
@@ -300,7 +311,7 @@ public class CovidDataController {
                     blocks.mineBlock(prefix);
                     blockChain.add(blocks);
 
-                    if (ChainValidator.isChainValid(prefix, blockChain)) { // If the cahin is valid, store it in db
+                    if (ChainValidator.isChainValid(prefix, blockChain)) { // If the chain is valid, store it in db
 
                         blocks.setCc(cc);
                         bcRepository2.saveAndFlush(blocks);
