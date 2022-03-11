@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import protal.bcserver.clockchain.BlockchainCasesRepository;
 import protal.bcserver.clockchain.BlockchainRepository;
-import protal.bcserver.clockchain.ChainValidator;
 import protal.bcserver.clockchain.block;
 import protal.bcserver.data.models.CovidCases;
 import protal.bcserver.data.models.CovidCasesMonthly;
@@ -273,11 +272,11 @@ public class CovidDataController {
                 String previous_hash = blockChain.size() > 0 ? blockChain.get(blockChain.size() - 1).getHash() : "0";
                 blocks = new block(previous_hash, data, new Date().getTime());
                 blocks.mineBlock(prefix);
-                blockChain.add(blocks);
 
 
-                // If the chain is valid, store it in db
-                if (ChainValidator.isChainValid(prefix, blockChain)) {
+                // If the block is valid, store it in db
+                if (blockChain.get(blockChain.size() - 1).getHash().equals(blocks.getPreviousHash())) {
+                    blockChain.add(blocks);
                     // Save the covid data first so we have the primary key
                     blocks.setCcd(_ccd);
 
@@ -288,7 +287,7 @@ public class CovidDataController {
                     logger.info(blocks.getHash());
 
                 } else {
-                    return new ResponseEntity<>(null, HttpStatus.UNPROCESSABLE_ENTITY);
+                    logger.info("Block is not properly mined");
                 }
 
 
@@ -328,9 +327,11 @@ public class CovidDataController {
 
                     blocks = new block(previous_hash, data, new Date().getTime());
                     blocks.mineBlock(prefix);
-                    blockChain.add(blocks);
 
-                    if (ChainValidator.isChainValid(prefix, blockChain)) { // If the chain is valid, store it in db
+
+                    // If the chain is valid, store it in db
+                    if (blockChain.get(blockChain.size() - 1).getHash().equals(blocks.getPreviousHash())) {
+                        blockChain.add(blocks);
 
                         blocks.setCc(cc);
                         bcRepository2.saveAndFlush(blocks);
@@ -340,6 +341,8 @@ public class CovidDataController {
                         logger.info(blocks.getHash());
 
                         jsonString.add(cc);
+                    } else {
+                        logger.info("Block is not properly mined");
                     }
 
                 }
