@@ -139,16 +139,22 @@ public class CovidDataController {
             OptionalDouble avg_deaths = null;
             OptionalInt filtered_max_deaths = null;
 
-            filtered_sum_deaths = filtered_list_year_month.stream().mapToInt(c -> c.getDeaths()).sum();
-            avg_deaths = filtered_list_year_month.stream().mapToInt(c -> c.getDeaths()).average();
-            filtered_max_deaths = filtered_list_year_month.stream().mapToInt(c -> c.getDeaths()).max();
+            filtered_sum_deaths = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getDeaths())
+                    .sum();
+            avg_deaths = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getDeaths())
+                    .average();
+            filtered_max_deaths = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getDeaths())
+                    .max();
 
             deaths_obj.put("sum", filtered_sum_deaths);
-            deaths_obj.put("avg", avg_deaths.isPresent() ? avg_deaths.getAsDouble() : 0);
+            deaths_obj.put("avg", avg_deaths.isPresent() ? Math.round(avg_deaths.getAsDouble()) : 0);
             deaths_obj.put("max", filtered_max_deaths.isPresent() ? filtered_max_deaths.getAsInt() : 0);
             response_json.put("deaths", deaths_obj);
             logger.info("Sum deaths (all months): " + filtered_sum_deaths);
-            logger.info("Avg deaths: " + (avg_deaths.isPresent() ? avg_deaths.getAsDouble() : 0));
+            logger.info("Avg deaths: " + (avg_deaths.isPresent() ? Math.round(avg_deaths.getAsDouble()) : 0));
             logger.info("Max deaths (month with highest death rate): " + (filtered_max_deaths.isPresent() ? filtered_max_deaths.getAsInt() : 0));
         }
 
@@ -164,16 +170,22 @@ public class CovidDataController {
             OptionalDouble avg_recovered = null;
             OptionalInt filtered_max_recovered = null;
 
-            filtered_sum_recovered = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).sum();
-            avg_recovered = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).average();
-            filtered_max_recovered = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).max();
+            filtered_sum_recovered = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getRecovered())
+                    .sum();
+            avg_recovered = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getRecovered())
+                    .average();
+            filtered_max_recovered = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getRecovered())
+                    .max();
 
             recovered_obj.put("sum", filtered_sum_recovered);
-            recovered_obj.put("avg", avg_recovered.isPresent() ? avg_recovered.getAsDouble() : 0);
+            recovered_obj.put("avg", avg_recovered.isPresent() ? Math.round(avg_recovered.getAsDouble()) : 0);
             recovered_obj.put("max", filtered_max_recovered.isPresent() ? filtered_max_recovered.getAsInt() : 0);
             response_json.put("recovered", recovered_obj);
             logger.info("Sum recovered (all months): " + filtered_sum_recovered);
-            logger.info("Avg recovered: " + (avg_recovered.isPresent() ? avg_recovered.getAsDouble() : 0));
+            logger.info("Avg recovered: " + (avg_recovered.isPresent() ? Math.round(avg_recovered.getAsDouble()) : 0));
             logger.info("Max recovered (month with highest recovery rate): " + (filtered_max_recovered.isPresent() ? filtered_max_recovered.getAsInt() : 0));
         }
 
@@ -189,16 +201,23 @@ public class CovidDataController {
             OptionalDouble avg_confirmed = null;
             OptionalInt filtered_max_confirmed = null;
 
-            filtered_sum_confirmed = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).sum();
-            avg_confirmed = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).average();
-            filtered_max_confirmed = filtered_list_year_month.stream().mapToInt(c -> c.getRecovered()).max();
+            filtered_sum_confirmed = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getRecovered())
+                    .sum();
+            avg_confirmed = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getRecovered())
+                    .average();
+            filtered_max_confirmed = filtered_list_year_month.stream()
+                    .mapToInt(c -> c.getRecovered())
+                    .max();
 
             confirmed_obj.put("sum", filtered_sum_confirmed);
-            confirmed_obj.put("avg", avg_confirmed.isPresent() ? avg_confirmed.getAsDouble() : 0);
+            confirmed_obj.put("avg", avg_confirmed.isPresent() ? Math.round(avg_confirmed.getAsDouble()) : 0);
             confirmed_obj.put("max", filtered_max_confirmed.isPresent() ? filtered_max_confirmed.getAsInt() : 0);
             response_json.put("confirmed", confirmed_obj);
+
             logger.info("Sum confirmed (all months): " + filtered_sum_confirmed);
-            logger.info("Avg confirmed: " + (avg_confirmed.isPresent() ? avg_confirmed.getAsDouble() : 0));
+            logger.info("Avg confirmed: " + (avg_confirmed.isPresent() ? Math.round(avg_confirmed.getAsDouble()) : 0));
             logger.info("Max confirmed (month with highest confirmed infection rate): " + (filtered_max_confirmed.isPresent() ? filtered_max_confirmed.getAsInt() : 0));
         }
 
