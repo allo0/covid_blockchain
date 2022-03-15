@@ -275,7 +275,23 @@ public class CovidDataController {
 
 
                 // If the block is valid, store it in db
-                if (blockChain.get(blockChain.size() - 1).getHash().equals(blocks.getPreviousHash())) {
+                if (blockChain.size() > 0) {
+                    if (blockChain.get(blockChain.size() - 1).getHash().equals(blocks.getPreviousHash())) {
+                        blockChain.add(blocks);
+                        // Save the covid data first so we have the primary key
+                        blocks.setCcd(_ccd);
+
+                        bcRepository.save(blocks);
+
+                        logger.info("Node: " + ((int) bcRepository.count()) + " created");
+                        logger.info(_ccd.toString());
+                        logger.info(blocks.getHash());
+                    } else {
+                        logger.info("Block is not properly mined");
+                    }
+
+                } else if (blockChain.size() == 0) {
+
                     blockChain.add(blocks);
                     // Save the covid data first so we have the primary key
                     blocks.setCcd(_ccd);
@@ -286,8 +302,6 @@ public class CovidDataController {
                     logger.info(_ccd.toString());
                     logger.info(blocks.getHash());
 
-                } else {
-                    logger.info("Block is not properly mined");
                 }
 
 
@@ -330,7 +344,22 @@ public class CovidDataController {
 
 
                     // If the chain is valid, store it in db
-                    if (blockChain.get(blockChain.size() - 1).getHash().equals(blocks.getPreviousHash())) {
+                    if (blockChain.size() > 0) {
+                        if (blockChain.get(blockChain.size() - 1).getHash().equals(blocks.getPreviousHash())) {
+                            blockChain.add(blocks);
+
+                            blocks.setCc(cc);
+                            bcRepository2.saveAndFlush(blocks);
+
+                            logger.info("Node: " + ((int) bcRepository2.count()) + " created");
+                            logger.info(cc.toString());
+                            logger.info(blocks.getHash());
+
+                            jsonString.add(cc);
+                        } else {
+                            logger.info("Block is not properly mined");
+                        }
+                    } else if (blockChain.size() == 0) {
                         blockChain.add(blocks);
 
                         blocks.setCc(cc);
@@ -341,8 +370,7 @@ public class CovidDataController {
                         logger.info(blocks.getHash());
 
                         jsonString.add(cc);
-                    } else {
-                        logger.info("Block is not properly mined");
+
                     }
 
                 }
