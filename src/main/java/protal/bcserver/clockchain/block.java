@@ -90,7 +90,7 @@ public class block {
         /**
          * Initiate a thread pool, and indicate the threaded code block
          */
-        ExecutorService executor = Executors.newFixedThreadPool(5);  //Using 5 threads.
+        ExecutorService executor = Executors.newFixedThreadPool(7);  //Using 7 threads.
         Runnable mineTask = () -> {
             String prefixString = new String(new char[prefix]).replace('\0', '0');
             // Each thread has its own nonce and hash

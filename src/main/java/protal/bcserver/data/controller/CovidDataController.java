@@ -29,7 +29,7 @@ public class CovidDataController {
     // Initiate the list to store the blockchain, the dificulty to mine
     // and the b;pcl object
     public static List<block> blockChain = new ArrayList<>();
-    public static int prefix = 3;
+    public static int prefix = 4;
     block blocks = new block();
 
     // Create the objects that will be used for the "queries" with the db
